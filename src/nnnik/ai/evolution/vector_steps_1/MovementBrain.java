@@ -5,24 +5,34 @@ import java.util.*;
 import nnnik.ai.evolution.gene.DirectionGene;
 import nnnik.ai.evolution.gene.DistanceGene;
 import nnnik.ai.evolution.gene.Gene;
+import nnnik.ai.evolution.gene.GenomeContainer;
 import nnnik.ai.evolution.gene.SequenceGene;
-import nnnik.ai.evolution.maze_game.InputProvider;
 import nnnik.ai.evolution.maze_game.MazeContender;
 import nnnik.maths.geometry.Vector2;
 
-public class MovementBrain implements InputProvider {
+public class MovementBrain implements GenomeContainer {
 	private ArrayList<Gene> genome = null;
 	private Gene controlSequence = new SequenceGene();
 	private int position = -1;
 	private Vector2 distanceCenterPosition = null;
-	private Vector2 currentOutput = null;
+	private MazeContender individual;
+	
+	
+	public MovementBrain(MazeContender individual) {
+		this.individual = individual;
+	}
 	
 	public void setGenome(ArrayList<Gene> genome) {
 		this.genome = genome;
+		reset();
 	}
 	
 	public ArrayList<Gene> getGenome() {
 		return genome;
+	}
+	
+	public MazeContender getContender() {
+		return individual;
 	}
 	
 	public void reset() {
@@ -31,13 +41,9 @@ public class MovementBrain implements InputProvider {
 		distanceCenterPosition = null;
 	}
 	
-	public Vector2 generateInput(MazeContender individual) {
-		return currentOutput;
-	}
-	
-	public void think(MazeContender individual) {
+	public void think() {
 		if (genome == null) {
-			currentOutput = null;
+			individual.setAcceleration(null);
 			return;
 		}
 		if (controlSequence instanceof DistanceGene) {
@@ -51,9 +57,9 @@ public class MovementBrain implements InputProvider {
 			}
 		}
 		if (position < genome.size()) {
-			currentOutput = (DirectionGene) genome.get(position);
+			individual.setAcceleration((DirectionGene) genome.get(position));
 		} else {
-			currentOutput = null;
+			individual.setAcceleration(null);
 		}
 	}
 	
@@ -77,15 +83,6 @@ public class MovementBrain implements InputProvider {
 				break;
 			}
 		}
-	}
-	
-	@SuppressWarnings("unchecked")
-	@Override
-	public MovementBrain clone() {
-		MovementBrain clone = new MovementBrain();
-		clone.setGenome((ArrayList<Gene>) genome.clone());
-		return clone;
-		
 	}
 	
 	public String toString() {

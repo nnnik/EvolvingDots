@@ -25,8 +25,7 @@ public class Maze {
 	
 	public void update(double timeSinceLastUpdate) {
 		for (MazeContender contender: contenders) {
-			if (contender.isActive()) {	
-				contender.updateAcceleration();
+			if (contender.isActive()) {
 				contender.move(timeSinceLastUpdate);
 				detectCollisions(contender);
 			}
@@ -53,7 +52,15 @@ public class Maze {
 		double x = this.getSize().getX();
 		double y = this.getSize().getY();
 		gc.clearRect(-x, -y, 2*x, 2*y);
+		ArrayList<MazeContender> highlighted = new ArrayList<>();
 		for (MazeContender contender: contenders) {
+			if (!contender.isHighlighted()) {
+				contender.draw(gc);
+			} else {
+				highlighted.add(contender);
+			}
+		}
+		for (MazeContender contender: highlighted) {
 			contender.draw(gc);
 		}
 		for (MazeObject child: children) {

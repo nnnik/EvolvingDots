@@ -10,6 +10,8 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 import nnnik.ai.evolution.gene.GeneticPopulation;
+import nnnik.ai.evolution.gene.GenomeContainer;
+import nnnik.ai.evolution.gene.PopulationControl;
 import nnnik.ai.evolution.gene.SimulationResults;
 import nnnik.ai.evolution.maze_game.Goal;
 import nnnik.ai.evolution.maze_game.Maze;
@@ -18,29 +20,36 @@ import nnnik.ai.evolution.maze_game.MazeContender;
 import nnnik.maths.geometry.Vector2;
 
 public class EvolutionSimulation {
+	
+	private static final boolean HUMAN_MODE = true;
+	
 	private Canvas display = null;
+	private KeyboardBrain humanInput = null;
 	private Timeline mainLoop = null;
 	
 	private GeneticPopulation population = null;
 	
 	private Maze maze;
-	
-	int currentThonkFrame = 0;
-	
-	int thonkEveryNFrame = 10;
-	int generation = 0;
-	int increaseEveryNGeneration = 5;
-	int increaseSize = 2;
-	double movementSpeed = 150.0;
-	int brainSize = 5;
-	int populationSize = 2000;
+	private MazeBuilder builder;
+	private Goal goal;
+		
+	private int thonkEveryNFrame = 10;
+	private int generation = 0;
+	private int increaseEveryNGeneration = 5;
+	private int increaseSize = 2;
+	private double movementSpeed = 150.0;
+	private int brainSize = 5;
+	private int populationSize = 1000;
 	
 	private Vector2 canvasSize = new Vector2(1000.0, 1000.0);
 	private boolean gameUnfinished = true;
 	
+	private MazeContender best;
+	
 	public EvolutionSimulation() {
 		display = new Canvas(canvasSize.getX(), canvasSize.getY());
-		buildMaze(new MazeBuilder());
+		builder = new MazeBuilder();
+		buildMaze(builder);
 		populate();
 		prepareSimulation();
 	}
@@ -61,20 +70,44 @@ public class EvolutionSimulation {
 		return display;
 	}
 	
+	public KeyboardBrain getInput() {
+		return humanInput;
+	}
+	
 	private void buildMaze(MazeBuilder mb) {
-		mb.setGoal(new Vector2(0.0, -9.0));
+		goal = mb.setGoal(new Vector2(0.0, -9.0));
 		mb.setSpawn(new Vector2(0.0, 9.0));
 		mb.addBlockade(new Vector2(-7.5, -2.7), new Vector2(2.5, 0.25));
 		mb.addBlockade(new Vector2(3.5, -2.7), new Vector2(6.5, 0.25));
 		mb.addBlockade(new Vector2(-5, -5.8), new Vector2(5, 0.25));
-		for (int i=0; i<populationSize; i++) {
-			mb.addContender(new MovementBrain());
-		}
 		maze = mb.getMaze();
 	}
 	
+	private class ContenderControl implements PopulationControl {
+
+		@Override
+		public GenomeContainer createIndividual() {
+			MazeContender contender = builder.addContender();
+			MovementBrain individual = new MovementBrain(contender);
+			return individual;
+		}
+
+		@Override
+		public void destroyIndividual(GenomeContainer individual) {
+			MazeContender contender = ((MovementBrain) individual).getContender();
+			maze.getContenders().remove(contender);
+		}
+		
+	}
+	
 	private void populate() {
-		population = new GeneticPopulation(new ImplGeneFactory(), populationSize, brainSize);
+		if (HUMAN_MODE) {
+			population = new GeneticPopulation(new ImplGeneFactory(), new ContenderControl(), 0, 0);
+			humanInput = new KeyboardBrain(builder.addContender());
+			
+		} else {
+			population = new GeneticPopulation(new ImplGeneFactory(), new ContenderControl(), populationSize, brainSize);
+		}
 	}
 	
 	private void buildTimeLine() {
@@ -109,31 +142,35 @@ public class EvolutionSimulation {
 		if (Math.floorMod(generation, increaseEveryNGeneration) == 0 && gameUnfinished) {
 			population.expandBrainSize(increaseSize);
 		}
-		for (int i = 0; i<populationSize; i++) {
-			MazeContender contender = maze.getContenders().get(i);
-			MovementBrain brain = (MovementBrain) contender.getInputProvider();
-			brain.reset();
-			brain.setGenome(population.getGenomes().get(i));
-		}
 		buildTimeLine();
 	}
 	
 	private boolean updatePopulation() {
 		if (maze.allInactive()) {
 			mainLoop.stop();
-			SimulationResults results = gatherResults();
-			population.evolve(results);
+			if (!HUMAN_MODE) {
+				SimulationResults results = gatherResults();
+				population.evolve(results);
+				if (best != null) {
+					best.setHighlightColor(null);
+				}
+				best = ((MovementBrain)population.getBest()).getContender();
+				best.setHighlightColor(Color.CORNFLOWERBLUE);
+				gameUnfinished = best.isUnfinished();
+			}
 			maze.reset();
+			if (HUMAN_MODE) {
+				humanInput.think();
+			}
 			prepareSimulation();
 			startSimulation();
-			maze.getContenders().get(populationSize-1).setHighlightColor(Color.CORNFLOWERBLUE);
 			return true;
 		}
 		return false;
 	}
 	
 	private SimulationResults gatherResults() {
-		return new FitnessEvaluator(maze.getContenders(), (Goal) maze.getChildren().get(0));
+		return new FitnessEvaluator(population.getPopulation(), (Goal) goal);
 	}
 
 	private void updatePhysics(double timeModifier) {
@@ -153,9 +190,8 @@ public class EvolutionSimulation {
 	}
 	
 	private void thonk() {
-		for (MazeContender contender: maze.getContenders()) {
-			MovementBrain brain = (MovementBrain) contender.getInputProvider();
-			brain.think(contender);
+		for (GenomeContainer brainG: population.getPopulation()) {
+			((MovementBrain) brainG).think();
 		}
 	}
 }

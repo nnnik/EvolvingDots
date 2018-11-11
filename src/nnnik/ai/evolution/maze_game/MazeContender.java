@@ -2,14 +2,12 @@ package nnnik.ai.evolution.maze_game;
 
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
-import nnnik.ai.evolution.vector_steps_1.DOTS_UI;
 import nnnik.maths.geometry.Vector2;
 
 public class MazeContender extends MazeObject {
 	
 	private Color highlight = null;
 	
-	private InputProvider inputProvider;
 	protected Spawn spawn;
 	
 	private boolean alive = true;
@@ -27,10 +25,9 @@ public class MazeContender extends MazeObject {
 	
 	static final Vector2 size = new Vector2(0.1, 0.1);
 	
-	public MazeContender(Spawn spawnpoint, InputProvider ip) {
+	public MazeContender(Spawn spawnpoint) {
 		super(spawnpoint.getPosition().clone());
 		spawn = spawnpoint;
-		inputProvider = ip;
 	}
 	
 	@Override
@@ -56,9 +53,9 @@ public class MazeContender extends MazeObject {
 		}
 	}
 	
-	public void updateAcceleration() {
+	public void setAcceleration(Vector2 acc) {
 		if (active) {
-			acceleration = inputProvider.generateInput(this);
+			acceleration = acc;
 			if (acceleration == null) {
 				deactivate();
 				return;
@@ -68,7 +65,6 @@ public class MazeContender extends MazeObject {
 				acceleration.normalize();
 			}
 			acceleration.multiply(ACCELERATION_MULTIPLIER);
-			DOTS_UI.log(acceleration.getX()+" "+acceleration.getY());
 		}
 	}
 	
@@ -76,12 +72,8 @@ public class MazeContender extends MazeObject {
 		this.highlight = highlight;
 	}
 	
-	public void setInputProvider(InputProvider ip) {
-		inputProvider = ip;
-	}
-	
-	public InputProvider getInputProvider() {
-		return inputProvider;
+	public boolean isHighlighted() {
+		return (highlight != null);
 	}
 	
 	public double getTimeAlive() {

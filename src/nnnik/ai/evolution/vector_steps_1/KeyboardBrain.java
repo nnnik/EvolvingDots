@@ -1,10 +1,9 @@
 package nnnik.ai.evolution.vector_steps_1;
 
-import nnnik.ai.evolution.maze_game.InputProvider;
 import nnnik.ai.evolution.maze_game.MazeContender;
 import nnnik.maths.geometry.Vector2;
 
-public class KeyboardBrain implements InputProvider {
+public class KeyboardBrain {
 	
 	private boolean up = false, down = false, left = false, right = false;
 	private Vector2 acceleration = new Vector2(0.0, 0.0);
@@ -12,6 +11,12 @@ public class KeyboardBrain implements InputProvider {
 	                             downVector  = new Vector2(0.0, 1.0), 
 	                             leftVector  = new Vector2(-1.0, 0.0), 
 	                             rightVector = new Vector2(1.0, 0.0);
+	private MazeContender individual;
+	
+	public KeyboardBrain(MazeContender individual) {
+		this.individual = individual;
+		think();
+	}
 	
 	public void setUpState(boolean state) {
 		if (state^up) {
@@ -21,6 +26,7 @@ public class KeyboardBrain implements InputProvider {
 				acceleration.subtract(upVector);
 			}
 			up = state;
+			think();
 		}
 	}
 	
@@ -32,6 +38,7 @@ public class KeyboardBrain implements InputProvider {
 				acceleration.subtract(downVector);
 			}
 			down = state;
+			think();
 		}
 	}
 	
@@ -43,6 +50,7 @@ public class KeyboardBrain implements InputProvider {
 				acceleration.subtract(leftVector);
 			}
 			left = state;
+			think();
 		}
 	}
 	
@@ -54,13 +62,12 @@ public class KeyboardBrain implements InputProvider {
 				acceleration.subtract(rightVector);
 			}
 			right = state;
+			think();
 		}
 	}
 	
-	@Override
-	public Vector2 generateInput(MazeContender contender) {
-		// TODO Auto-generated method stub
-		return acceleration;
+	public void think() {
+		individual.setAcceleration(acceleration);
 	}
 
 }

@@ -1,17 +1,17 @@
 package nnnik.ai.evolution.vector_steps_1;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import nnnik.ai.evolution.gene.Gene;
+import nnnik.ai.evolution.gene.GenomeContainer;
 import nnnik.ai.evolution.gene.SimulationResults;
 import nnnik.ai.evolution.maze_game.Goal;
 import nnnik.ai.evolution.maze_game.MazeContender;
 
 public class FitnessEvaluator implements SimulationResults {
 	
-	Map<List<Gene>, DoubleWorkaround> fitnesses = new HashMap<List<Gene>, DoubleWorkaround>();
+	Map<GenomeContainer, DoubleWorkaround> fitnesses = new HashMap<GenomeContainer, DoubleWorkaround>();
 	
 	
 	private class DoubleWorkaround { //distusting piece of shit class
@@ -22,11 +22,11 @@ public class FitnessEvaluator implements SimulationResults {
 		}
 	}
 	
-	public FitnessEvaluator(List<MazeContender> contenders, Goal goal) {
-		for (MazeContender contender: contenders) {
-			double fitness = calculateFitness(contender, goal);
-			MovementBrain brain = (MovementBrain) contender.getInputProvider();
-			fitnesses.put(brain.getGenome(), new DoubleWorkaround(fitness));
+	public FitnessEvaluator(ArrayList<GenomeContainer> arrayList, Goal goal) {
+		for (GenomeContainer brainG: arrayList) {
+			MovementBrain brain = (MovementBrain) brainG;
+			double fitness = calculateFitness(brain.getContender(), goal);
+			fitnesses.put(brainG, new DoubleWorkaround(fitness));
 		}
 		
 	}
@@ -35,9 +35,6 @@ public class FitnessEvaluator implements SimulationResults {
 		double fitness = 0;
 		if (contender.isUnfinished()) {
 			fitness = 1/(1+contender.getPosition().distance(goal.getPosition()));
-			if (!contender.isAlive()) {
-				fitness = Math.pow(fitness, 2);
-			}
 		} else {
 			fitness = 1 + (1/contender.getTimeAlive());
 		}
@@ -46,6 +43,6 @@ public class FitnessEvaluator implements SimulationResults {
 
 
 	@Override
-	public double getFitness(List<Gene> individual) {
+	public double getFitness(GenomeContainer individual) {
 		return fitnesses.get(individual).value;
 	}}

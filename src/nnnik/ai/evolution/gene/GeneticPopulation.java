@@ -5,70 +5,85 @@ import java.util.ArrayList;
 
 public class GeneticPopulation {
 	
+	
+	private static final Random r = new Random();
+	
 	private static final double STRUCTURAL_STABLE_MUTATION_CHANCE = 0.0;
-	private static final double WEAK_STABLE_MUTATION_CHANCE = 0.03;
-	private static final double RAMP_FACTOR = 1;
-	private static final double WEAK_RAMP_MUTATION_CHANCE = 0.02;
+	private static final double WEAK_STABLE_MUTATION_CHANCE = 0.01;
+	private static final double RAMP_FACTOR = 2;
+	private static final double WEAK_RAMP_MUTATION_CHANCE = 0.05;
 	private static final double STRUCTURAL_RAMP_MUTATION_CHANCE = 0.01;
-	private ArrayList<ArrayList<Gene>> individuals = new ArrayList<ArrayList<Gene>>();
+	
+	private ArrayList<GenomeContainer> individuals = new ArrayList<GenomeContainer>();
 	private int generation = 0;
 	
-	private ArrayList<Gene> best; 
-	
-	private Random r = new Random();
+	private GenomeContainer best; 
+
 	private int brainSize;
 	
 	private GeneFactory geneFactory;
+	private PopulationControl populationControl;
 	
-	public GeneticPopulation(GeneFactory gf, int size, int brainSize) {
+	public GeneticPopulation(GeneFactory gf, PopulationControl pc, int size, int brainSize) {
 		individuals = new ArrayList<>();
 		geneFactory = gf;
 		this.brainSize = brainSize;
+		populationControl = pc;
 		setSize(size);
 	}
 	
 	public void expandBrainSize(int count) {
-		for(ArrayList<Gene> individual: individuals) {
+		for(GenomeContainer individual: individuals) {
 			individualAppendGenes(individual, count);
 		}
 	}
 	
 	
-	public void setSize(int n) {
-		for(;individuals.size()<n;) {
-			ArrayList<Gene> individual = new ArrayList<Gene>();
+	public void setSize(int size) {
+		for(;individuals.size()<size;) {
+			GenomeContainer individual = populationControl.createIndividual();
 			individualAppendGenes(individual, brainSize);
 			individuals.add(individual);
 		}
 	}
 	
-	protected void individualAppendGenes(ArrayList<Gene> individual, int count) {
+	protected void individualAppendGenes(GenomeContainer individual, int count) {
+		ArrayList<Gene> individualGenome = individual.getGenome();
+		if (individualGenome == null) {
+			individualGenome = new ArrayList<Gene>();
+			individual.setGenome(individualGenome);
+		}
 		for (int i = 0; i<count; i++) {
-			individual.add(geneFactory.buildGene());
+			individualGenome.add(geneFactory.buildGene());
 		}
 	}
 	
-	public ArrayList<ArrayList<Gene>> getGenomes() {
+	public ArrayList<GenomeContainer> getPopulation() {
 		return individuals;
 	}
 	
-	@SuppressWarnings("unchecked")
 	public void evolve(SimulationResults results) {
 		double totalFitness = getTotalFitness(results);
 		ArrayList<ArrayList<Gene>> nextGen = new ArrayList<>();
 		for (; nextGen.size()<individuals.size()-1;) {
 			double selectedFitness = r.nextDouble() * totalFitness;
-			for (ArrayList<Gene> individual: individuals) {
+			for (GenomeContainer individual: individuals) {
 				selectedFitness -= results.getFitness(individual);
 				if (selectedFitness<0) {
-					nextGen.add(generateBaby(individual));
+					nextGen.add(generateBaby(individual.getGenome()));
 					break;
 				}
 			}
 		}
-		best = (ArrayList<Gene>)best.clone();
-		nextGen.add(best);
-		individuals = nextGen;
+		for (int i=0, j=0; j<individuals.size(); i++, j++) {
+			GenomeContainer individual = individuals.get(j);
+			if (individual != best) {
+				individual.setGenome(nextGen.get(i));
+			} else {
+				i--;
+				individual.setGenome(individual.getGenome());
+			}
+		}
 		generation++;
 	}
 	
@@ -76,7 +91,7 @@ public class GeneticPopulation {
 		double total = 0;
 		double max = -100000.0;
 		double fit;
-		for (ArrayList<Gene> individual: individuals) {
+		for (GenomeContainer individual: individuals) {
 			fit = results.getFitness(individual);
 			total += fit;
 			if (fit>max) {
@@ -109,7 +124,7 @@ public class GeneticPopulation {
 		return baby;
 	}
 	
-	public ArrayList<Gene> getBest() {
+	public GenomeContainer getBest() {
 		return best;
 	}
 

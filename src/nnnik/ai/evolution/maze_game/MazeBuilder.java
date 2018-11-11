@@ -7,32 +7,38 @@ public class MazeBuilder {
 	private Spawn spawn = null;
 	private Goal goal = null;
 	
-	public void addBlockade(Vector2 position, Vector2 size) {
-		maze.getChildren().add(new Blockade(position, size));
+	public Blockade addBlockade(Vector2 position, Vector2 size) {
+		Blockade blockade = new Blockade(position, size);
+		maze.getChildren().add(blockade);
+		return blockade;
 	}
 	
-	public void setSpawn(Vector2 position) {
+	public Spawn setSpawn(Vector2 position) {
 		if (spawn != null) {
 			maze.getChildren().remove(spawn);
 			maze.getContenders().clear();
 		}
 		spawn = new Spawn(position);
 		maze.getChildren().add(spawn);
+		return spawn;
 	}
 	
-	public void setGoal(Vector2 position) {
+	public Goal setGoal(Vector2 position) {
 		if (goal != null) {
 			maze.getChildren().remove(goal);
 		}
 		goal = new Goal(position);
 		maze.getChildren().add(goal);
+		return goal;
 	}
 	
-	public void addContender(InputProvider ip) {
+	public MazeContender addContender() {
 		if (spawn == null) {
-			new IllegalStateException("Contender added befoe the spawn was set");
+			new IllegalStateException("Contender added before the spawn was set");
 		}
-		maze.getContenders().add(new MazeContender(spawn, ip));
+		MazeContender contender = new MazeContender(spawn);
+		maze.getContenders().add(contender);
+		return contender;
 	}
 	
 	public Maze getMaze() {
