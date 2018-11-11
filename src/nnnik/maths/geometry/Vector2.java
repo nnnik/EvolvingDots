@@ -1,9 +1,6 @@
-package nnnik.ai.evolution.vector_steps_1;
-
-import java.util.Random;
+package nnnik.maths.geometry;
 
 public class Vector2 {
-	private static Random r = null;
 	
 	private double x;
 	private double y;
@@ -44,12 +41,27 @@ public class Vector2 {
 		}
 	}
 	
+	public void abs() {
+		x = Math.abs(x);
+		y = Math.abs(y);
+	}
+	
+	public void reduce(Vector2 v2) {
+		subtract(v2);
+		if (x < 0) {
+			x = 0;
+		}
+		if (y < 0) {
+			y = 0;
+		}
+	}
+	
 	public double distance(Vector2 v2) {
 		return Math.pow(Math.pow(this.x-v2.x,2)+Math.pow(this.y-v2.y,2), 0.5);
 	}
 	
 	public double cabDistance(Vector2 v2) {
-		return x-v2.x+y-v2.y;
+		return Math.abs(x-v2.x+y-v2.y);
 	}
 	
 	public double getX() {
@@ -60,19 +72,14 @@ public class Vector2 {
 		return y;
 	}
 	
+	@Override
 	public Vector2 clone() {
 		return new Vector2(x,y);
 	}
-	
-	static public Vector2 randomMovement() {
-		if (r == null) {
-			r = new Random();
-		}
-		double x = r.nextDouble()*2-1;
-		double y = r.nextDouble()*2-1;
-		Vector2 v = new Vector2(x, y);
-		v.normalize();
-		return v;
+
+	public void divide(Vector2 v2) {
+		x = x /	v2.getX();
+		y = y / v2.getY();
 	}
 	
 }
